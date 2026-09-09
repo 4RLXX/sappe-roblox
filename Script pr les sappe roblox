@@ -1933,6 +1933,122 @@ clothing.Visible = true
 search.Visible = false
 saved.Visible = true
 
+
+--========================================================
+-- MOBILE ADAPTER - VERSION CORRIGEE
+--========================================================
+
+local mobileScale = Instance.new("UIScale")
+mobileScale.Name = "MobileScale"
+mobileScale.Parent = gui
+
+local camera = workspace.CurrentCamera
+
+local function updateMobileLayout()
+	camera = workspace.CurrentCamera
+	if not camera then return end
+
+	local viewport = camera.ViewportSize
+	local width = viewport.X
+	local height = viewport.Y
+
+	-- Fonctionne sur vrai téléphone ET dans l'émulateur d'appareils de Studio.
+	local isSmallScreen = width <= 900
+
+	if isSmallScreen then
+		-- Réduction directe et importante.
+		-- 0.50 = environ la moitié de la taille originale.
+		mobileScale.Scale = 0.50
+
+		-- Barre du haut
+		topBar.AnchorPoint = Vector2.new(0.5, 0)
+		topBar.Position = UDim2.new(0.5, 0, 0, 8)
+
+		-- Fenêtres centrées
+		clothing.AnchorPoint = Vector2.new(0.5, 0.5)
+		clothing.Position = UDim2.new(0.5, 0, 0.53, 0)
+
+		search.AnchorPoint = Vector2.new(0.5, 0.5)
+		search.Position = UDim2.new(0.5, 0, 0.53, 0)
+
+		saved.AnchorPoint = Vector2.new(0.5, 0.5)
+		saved.Position = UDim2.new(0.5, 0, 0.53, 0)
+
+	else
+		-- PC : taille normale
+		mobileScale.Scale = 1
+
+		topBar.AnchorPoint = Vector2.new(0, 0)
+		topBar.Position = UDim2.new(0.5, -250, 0, 10)
+
+		clothing.AnchorPoint = Vector2.new(0, 0)
+		clothing.Position = UDim2.new(0.5, -430, 0.5, -215)
+
+		search.AnchorPoint = Vector2.new(0, 0)
+		search.Position = UDim2.new(0.5, -215, 0.5, -260)
+
+		saved.AnchorPoint = Vector2.new(0, 0)
+		saved.Position = UDim2.new(1, -520, 0.5, -300)
+	end
+end
+
+--========================================================
+-- DRAG TACTILE
+--========================================================
+
+local function addTouchDrag(handle, frame)
+	local dragging = false
+	local dragStart = nil
+	local startPosition = nil
+
+	handle.Active = true
+
+	handle.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPosition = frame.Position
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if not dragging then return end
+		if input.UserInputType ~= Enum.UserInputType.Touch then return end
+		if not dragStart or not startPosition then return end
+
+		local delta = input.Position - dragStart
+		local scale = mobileScale.Scale
+
+		frame.Position = UDim2.new(
+			startPosition.X.Scale,
+			startPosition.X.Offset + (delta.X / scale),
+			startPosition.Y.Scale,
+			startPosition.Y.Offset + (delta.Y / scale)
+		)
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
+	end)
+end
+
+addTouchDrag(clothingTitle, clothing)
+addTouchDrag(searchTitle, search)
+addTouchDrag(savedTitle, saved)
+
+-- Mise à jour au changement d'orientation / taille d'écran
+if camera then
+	camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateMobileLayout)
+end
+
+updateMobileLayout()
+
+--========================================================
+-- FIN MOBILE ADAPTER
+--========================================================
+
 --========================================================
 -- START
 --========================================================
