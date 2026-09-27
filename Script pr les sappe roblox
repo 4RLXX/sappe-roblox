@@ -1,117 +1,39 @@
 --========================================================
--- CLOTHING TESTER - LOCALSCRIPT
---========================================================
--- VERSION FINALE
---
--- â€¢ Liste illimitÃ©e cÃ´tÃ© interface
--- â€¢ Scroll automatique
--- â€¢ Sauvegarde
--- â€¢ Suppression persistante
--- â€¢ Renommage persistant
--- â€¢ Search par ID
--- â€¢ Models
--- â€¢ Mobile
---
--- PLACE DANS StarterPlayerScripts
+-- CLOTHING TESTER
+-- SEARCH PAR ID
+-- SAVED OUTFITS
+-- 100% LOCALSCRIPT
 --========================================================
 
-local Players =
-	game:GetService("Players")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
-local UserInputService =
-	game:GetService("UserInputService")
-
-local ReplicatedStorage =
-	game:GetService("ReplicatedStorage")
-
-local player =
-	Players.LocalPlayer
-
-local playerGui =
-	player:WaitForChild("PlayerGui")
-
-local Remote =
-	ReplicatedStorage:WaitForChild(
-		"ClothingTesterRemote"
-	)
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
 --========================================================
--- DATA
+-- DONNEES
 --========================================================
 
 local savedOutfits = {}
 
-local selectedSearchType = "Shirt"
-
-local currentItemID = nil
-local currentItemType = "Shirt"
-
 local originalShirt = nil
 local originalPants = nil
 
+local selectedSearchType = "Shirt"
+
 --========================================================
--- UTIL
+-- FONCTIONS
 --========================================================
 
-local function cleanID(id)
-
-	id = tostring(id or "")
-
-	id = id:gsub(
-		"rbxassetid://",
-		""
-	)
-
-	id = id:gsub(
-		"%s+",
-		""
-	)
-
-	local number =
-		tonumber(id)
-
-	if not number then
-		return nil
-	end
-
-	return number
-end
-
-local function getCharacter()
-
-	return player.Character
-		or player.CharacterAdded:Wait()
-
-end
-
-local function addCorner(
-	object,
-	radius
-)
-
-	local corner =
-		Instance.new("UICorner")
-
-	corner.CornerRadius =
-		UDim.new(
-			0,
-			radius or 8
-		)
-
+local function addCorner(object, radius)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, radius or 8)
 	corner.Parent = object
-
 end
 
-local function createButton(
-	parent,
-	text,
-	position,
-	size,
-	color
-)
-
-	local button =
-		Instance.new("TextButton")
+local function createButton(parent, text, position, size, color)
+	local button = Instance.new("TextButton")
 
 	button.Size = size
 	button.Position = position
@@ -120,12 +42,10 @@ local function createButton(
 	button.BorderSizePixel = 0
 
 	button.Text = text
-	button.TextColor3 =
-		Color3.new(1, 1, 1)
+	button.TextColor3 = Color3.new(1, 1, 1)
 
 	button.TextSize = 14
-	button.Font =
-		Enum.Font.GothamBold
+	button.Font = Enum.Font.GothamBold
 
 	button.AutoButtonColor = true
 
@@ -136,50 +56,27 @@ local function createButton(
 	return button
 end
 
-local function createTextBox(
-	parent,
-	name,
-	placeholder,
-	position,
-	size
-)
+local function createTextBox(parent, name, placeholder, position, size)
 
-	local box =
-		Instance.new("TextBox")
+	local box = Instance.new("TextBox")
 
 	box.Name = name
 
 	box.Size = size
 	box.Position = position
 
-	box.BackgroundColor3 =
-		Color3.fromRGB(
-			45,
-			45,
-			45
-		)
-
+	box.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 	box.BorderSizePixel = 0
 
-	box.PlaceholderText =
-		placeholder
-
-	box.PlaceholderColor3 =
-		Color3.fromRGB(
-			150,
-			150,
-			150
-		)
+	box.PlaceholderText = placeholder
+	box.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
 
 	box.Text = ""
 
-	box.TextColor3 =
-		Color3.new(1, 1, 1)
+	box.TextColor3 = Color3.new(1, 1, 1)
 
 	box.TextSize = 15
-
-	box.Font =
-		Enum.Font.Gotham
+	box.Font = Enum.Font.Gotham
 
 	box.ClearTextOnFocus = false
 
@@ -190,510 +87,438 @@ local function createTextBox(
 	return box
 end
 
+local function cleanID(id)
+
+	id = tostring(id or "")
+
+	id = id:gsub("rbxassetid://", "")
+	id = id:gsub("%s+", "")
+
+	if id == "" then
+		return nil
+	end
+
+	if not tonumber(id) then
+		return nil
+	end
+
+	return tonumber(id)
+end
+
+local function getCharacter()
+	return player.Character or player.CharacterAdded:Wait()
+end
+
 --========================================================
--- GUI
+-- SCREEN GUI
 --========================================================
 
-local gui =
-	Instance.new("ScreenGui")
+local gui = Instance.new("ScreenGui")
 
-gui.Name =
-	"ClothingTesterGUI"
-
+gui.Name = "ClothingTesterGUI"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 
 gui.Parent = playerGui
 
 --========================================================
--- TOP BAR
+-- BARRE DU HAUT
 --========================================================
 
-local topBar =
-	Instance.new("Frame")
+local topBar = Instance.new("Frame")
 
-topBar.Size =
-	UDim2.fromOffset(
-		600,
-		50
-	)
+topBar.Name = "TopBar"
 
-topBar.Position =
-	UDim2.new(
-		0.5,
-		-300,
-		0,
-		10
-	)
+topBar.Size = UDim2.fromOffset(500, 50)
 
-topBar.BackgroundColor3 =
-	Color3.fromRGB(
-		20,
-		20,
-		20
-	)
+topBar.Position = UDim2.new(
+	0.5,
+	-250,
+	0,
+	10
+)
+
+topBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 
 topBar.BorderSizePixel = 0
+
 topBar.Parent = gui
 
 addCorner(topBar, 12)
 
-local clothingToggle =
-	createButton(
-		topBar,
-		"CLOTHING",
-		UDim2.fromOffset(5, 5),
-		UDim2.fromOffset(155, 40),
-		Color3.fromRGB(
-			55,
-			110,
-			180
-		)
-	)
-
-local searchToggle =
-	createButton(
-		topBar,
-		"SEARCH",
-		UDim2.fromOffset(170, 5),
-		UDim2.fromOffset(155, 40),
-		Color3.fromRGB(
-			60,
-			130,
-			90
-		)
-	)
-
-local savedToggle =
-	createButton(
-		topBar,
-		"SAVED OUTFITS",
-		UDim2.fromOffset(335, 5),
-		UDim2.fromOffset(160, 40),
-		Color3.fromRGB(
-			90,
-			70,
-			150
-		)
-	)
-
-local modelToggle =
-	createButton(
-		topBar,
-		"MODEL",
-		UDim2.fromOffset(505, 5),
-		UDim2.fromOffset(90, 40),
-		Color3.fromRGB(
-			160,
-			100,
-			50
-		)
-	)
-
 --========================================================
--- CLOTHING WINDOW
+-- BOUTONS TOP
 --========================================================
 
-local clothing =
-	Instance.new("Frame")
+local clothingToggle = createButton(
+	topBar,
+	"CLOTHING",
+	UDim2.fromOffset(5, 5),
+	UDim2.fromOffset(155, 40),
+	Color3.fromRGB(55, 110, 180)
+)
 
-clothing.Size =
-	UDim2.fromOffset(
-		400,
-		430
-	)
+local searchToggle = createButton(
+	topBar,
+	"SEARCH",
+	UDim2.fromOffset(170, 5),
+	UDim2.fromOffset(155, 40),
+	Color3.fromRGB(60, 130, 90)
+)
 
-clothing.Position =
-	UDim2.new(
-		0.5,
-		-430,
-		0.5,
-		-215
-	)
+local savedToggle = createButton(
+	topBar,
+	"SAVED OUTFITS",
+	UDim2.fromOffset(335, 5),
+	UDim2.fromOffset(160, 40),
+	Color3.fromRGB(90, 70, 150)
+)
 
-clothing.BackgroundColor3 =
-	Color3.fromRGB(
-		24,
-		24,
-		24
-	)
+--========================================================
+--========================================================
+-- CLOTHING GUI
+--========================================================
+--========================================================
+
+local clothing = Instance.new("Frame")
+
+clothing.Name = "Clothing"
+
+clothing.Size = UDim2.fromOffset(400, 430)
+
+clothing.Position = UDim2.new(
+	0.5,
+	-430,
+	0.5,
+	-215
+)
+
+clothing.BackgroundColor3 = Color3.fromRGB(24, 24, 24)
 
 clothing.BorderSizePixel = 0
+
 clothing.Parent = gui
 
 addCorner(clothing, 15)
 
-local clothingTitle =
-	Instance.new("TextLabel")
+--========================================================
+-- TITRE
+--========================================================
 
-clothingTitle.Size =
-	UDim2.new(
-		1,
-		-70,
-		0,
-		50
-	)
+local clothingTitle = Instance.new("TextLabel")
 
-clothingTitle.Position =
-	UDim2.fromOffset(
-		20,
-		5
-	)
+clothingTitle.Size = UDim2.new(1, -70, 0, 50)
+
+clothingTitle.Position = UDim2.fromOffset(20, 5)
 
 clothingTitle.BackgroundTransparency = 1
 
-clothingTitle.Text =
-	"CLOTHING"
+clothingTitle.Text = "CLOTHING"
 
-clothingTitle.TextColor3 =
-	Color3.new(1, 1, 1)
+clothingTitle.TextColor3 = Color3.new(1, 1, 1)
 
 clothingTitle.TextSize = 24
 
-clothingTitle.Font =
-	Enum.Font.GothamBold
+clothingTitle.Font = Enum.Font.GothamBold
 
-clothingTitle.TextXAlignment =
-	Enum.TextXAlignment.Left
+clothingTitle.TextXAlignment = Enum.TextXAlignment.Left
 
 clothingTitle.Parent = clothing
 
-local closeClothing =
-	createButton(
-		clothing,
-		"X",
-		UDim2.new(1, -50, 0, 10),
-		UDim2.fromOffset(40, 40),
-		Color3.fromRGB(
-			160,
-			55,
-			55
-		)
-	)
+--========================================================
+-- CLOSE
+--========================================================
+
+local closeClothing = createButton(
+	clothing,
+	"X",
+	UDim2.new(1, -50, 0, 10),
+	UDim2.fromOffset(40, 40),
+	Color3.fromRGB(160, 55, 55)
+)
 
 --========================================================
 -- SHIRT
 --========================================================
 
-local shirtLabel =
-	Instance.new("TextLabel")
+local shirtLabel = Instance.new("TextLabel")
 
-shirtLabel.Size =
-	UDim2.fromOffset(
-		250,
-		25
-	)
+shirtLabel.Size = UDim2.fromOffset(250, 25)
 
-shirtLabel.Position =
-	UDim2.fromOffset(
-		20,
-		60
-	)
+shirtLabel.Position = UDim2.fromOffset(20, 60)
 
 shirtLabel.BackgroundTransparency = 1
 
-shirtLabel.Text =
-	"ðŸ‘• SHIRT"
+shirtLabel.Text = "👕 SHIRT"
 
-shirtLabel.TextColor3 =
-	Color3.new(1, 1, 1)
+shirtLabel.TextColor3 = Color3.new(1, 1, 1)
 
 shirtLabel.TextSize = 17
 
-shirtLabel.Font =
-	Enum.Font.GothamBold
+shirtLabel.Font = Enum.Font.GothamBold
 
-shirtLabel.TextXAlignment =
-	Enum.TextXAlignment.Left
+shirtLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 shirtLabel.Parent = clothing
 
-local shirtBox =
-	createTextBox(
-		clothing,
-		"ShirtID",
-		"Shirt ID",
-		UDim2.fromOffset(20, 88),
-		UDim2.fromOffset(250, 40)
-	)
+local shirtBox = createTextBox(
+	clothing,
+	"ShirtID",
+	"Shirt ID",
+	UDim2.fromOffset(20, 88),
+	UDim2.fromOffset(250, 40)
+)
 
-local shirtTemplateBox =
-	createTextBox(
-		clothing,
-		"ShirtTemplateID",
-		"Decal Shirt ID",
-		UDim2.fromOffset(20, 133),
-		UDim2.fromOffset(250, 40)
-	)
+local shirtTemplateBox = createTextBox(
+	clothing,
+	"ShirtTemplateID",
+	"Decal Shirt ID",
+	UDim2.fromOffset(20, 133),
+	UDim2.fromOffset(250, 40)
+)
 
 --========================================================
 -- PANTS
 --========================================================
 
-local pantsLabel =
-	Instance.new("TextLabel")
+local pantsLabel = Instance.new("TextLabel")
 
-pantsLabel.Size =
-	UDim2.fromOffset(
-		250,
-		25
-	)
+pantsLabel.Size = UDim2.fromOffset(250, 25)
 
-pantsLabel.Position =
-	UDim2.fromOffset(
-		20,
-		178
-	)
+pantsLabel.Position = UDim2.fromOffset(20, 178)
 
 pantsLabel.BackgroundTransparency = 1
 
-pantsLabel.Text =
-	"ðŸ‘– PANTS"
+pantsLabel.Text = "👖 PANTS"
 
-pantsLabel.TextColor3 =
-	Color3.new(1, 1, 1)
+pantsLabel.TextColor3 = Color3.new(1, 1, 1)
 
 pantsLabel.TextSize = 17
 
-pantsLabel.Font =
-	Enum.Font.GothamBold
+pantsLabel.Font = Enum.Font.GothamBold
 
-pantsLabel.TextXAlignment =
-	Enum.TextXAlignment.Left
+pantsLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 pantsLabel.Parent = clothing
 
-local pantsBox =
-	createTextBox(
-		clothing,
-		"PantsID",
-		"Pants ID",
-		UDim2.fromOffset(20, 206),
-		UDim2.fromOffset(250, 40)
-	)
+local pantsBox = createTextBox(
+	clothing,
+	"PantsID",
+	"Pants ID",
+	UDim2.fromOffset(20, 206),
+	UDim2.fromOffset(250, 40)
+)
 
-local pantsTemplateBox =
-	createTextBox(
-		clothing,
-		"PantsTemplateID",
-		"Decal Pants ID",
-		UDim2.fromOffset(20, 251),
-		UDim2.fromOffset(250, 40)
-	)
-
-local equipButton =
-	createButton(
-		clothing,
-		"EQUIP",
-		UDim2.fromOffset(20, 305),
-		UDim2.fromOffset(250, 42),
-		Color3.fromRGB(
-			45,
-			140,
-			70
-		)
-	)
-
-local unequipButton =
-	createButton(
-		clothing,
-		"UNEQUIP",
-		UDim2.fromOffset(20, 355),
-		UDim2.fromOffset(250, 42),
-		Color3.fromRGB(
-			150,
-			55,
-			55
-		)
-	)
+local pantsTemplateBox = createTextBox(
+	clothing,
+	"PantsTemplateID",
+	"Decal Pants ID",
+	UDim2.fromOffset(20, 251),
+	UDim2.fromOffset(250, 40)
+)
 
 --========================================================
--- SEARCH
+-- EQUIP
 --========================================================
 
-local search =
-	Instance.new("Frame")
+local equipButton = createButton(
+	clothing,
+	"EQUIP",
+	UDim2.fromOffset(20, 305),
+	UDim2.fromOffset(250, 42),
+	Color3.fromRGB(45, 140, 70)
+)
 
-search.Size =
-	UDim2.fromOffset(
-		430,
-		520
-	)
+local unequipButton = createButton(
+	clothing,
+	"UNEQUIP",
+	UDim2.fromOffset(20, 355),
+	UDim2.fromOffset(250, 42),
+	Color3.fromRGB(150, 55, 55)
+)
 
-search.Position =
-	UDim2.new(
-		0.5,
-		-215,
-		0.5,
-		-260
-	)
+--========================================================
+-- DRAG CLOTHING
+--========================================================
 
-search.BackgroundColor3 =
-	Color3.fromRGB(
-		20,
-		20,
-		20
-	)
+local clothingDragging = false
+local clothingDragStart
+local clothingStartPosition
+
+clothingTitle.InputBegan:Connect(function(input)
+
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		clothingDragging = true
+
+		clothingDragStart = input.Position
+		clothingStartPosition = clothing.Position
+
+	end
+
+end)
+
+clothingTitle.InputEnded:Connect(function(input)
+
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+		clothingDragging = false
+
+	end
+
+end)
+
+--========================================================
+--========================================================
+-- SEARCH GUI
+--========================================================
+--========================================================
+
+local search = Instance.new("Frame")
+
+search.Name = "Search"
+
+search.Size = UDim2.fromOffset(430, 520)
+
+search.Position = UDim2.new(
+	0.5,
+	-215,
+	0.5,
+	-260
+)
+
+search.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 
 search.BorderSizePixel = 0
+
 search.Parent = gui
 
 addCorner(search, 15)
 
-local searchTitle =
-	Instance.new("TextLabel")
+--========================================================
+-- TITRE SEARCH
+--========================================================
 
-searchTitle.Size =
-	UDim2.new(
-		1,
-		-70,
-		0,
-		50
-	)
+local searchTitle = Instance.new("TextLabel")
 
-searchTitle.Position =
-	UDim2.fromOffset(
-		20,
-		5
-	)
+searchTitle.Size = UDim2.new(1, -70, 0, 50)
+
+searchTitle.Position = UDim2.fromOffset(20, 5)
 
 searchTitle.BackgroundTransparency = 1
 
-searchTitle.Text =
-	"ðŸ”Ž SEARCH ITEM"
+searchTitle.Text = "🔎 SEARCH ITEM"
 
-searchTitle.TextColor3 =
-	Color3.new(1, 1, 1)
+searchTitle.TextColor3 = Color3.new(1, 1, 1)
 
 searchTitle.TextSize = 23
 
-searchTitle.Font =
-	Enum.Font.GothamBold
+searchTitle.Font = Enum.Font.GothamBold
 
-searchTitle.TextXAlignment =
-	Enum.TextXAlignment.Left
+searchTitle.TextXAlignment = Enum.TextXAlignment.Left
 
 searchTitle.Parent = search
 
-local closeSearch =
-	createButton(
-		search,
-		"X",
-		UDim2.new(1, -50, 0, 10),
-		UDim2.fromOffset(40, 40),
-		Color3.fromRGB(
-			160,
-			55,
-			55
-		)
-	)
+--========================================================
+-- CLOSE SEARCH
+--========================================================
 
-local typeLabel =
-	Instance.new("TextLabel")
+local closeSearch = createButton(
+	search,
+	"X",
+	UDim2.new(1, -50, 0, 10),
+	UDim2.fromOffset(40, 40),
+	Color3.fromRGB(160, 55, 55)
+)
 
-typeLabel.Size =
-	UDim2.fromOffset(
-		300,
-		25
-	)
+--========================================================
+-- TYPE
+--========================================================
 
-typeLabel.Position =
-	UDim2.fromOffset(
-		20,
-		65
-	)
+local typeLabel = Instance.new("TextLabel")
+
+typeLabel.Size = UDim2.fromOffset(300, 25)
+
+typeLabel.Position = UDim2.fromOffset(20, 65)
 
 typeLabel.BackgroundTransparency = 1
 
-typeLabel.Text =
-	"TYPE D'ITEM"
+typeLabel.Text = "TYPE D'ITEM"
 
-typeLabel.TextColor3 =
-	Color3.new(1, 1, 1)
+typeLabel.TextColor3 = Color3.new(1, 1, 1)
 
 typeLabel.TextSize = 15
 
-typeLabel.Font =
-	Enum.Font.GothamBold
+typeLabel.Font = Enum.Font.GothamBold
 
-typeLabel.TextXAlignment =
-	Enum.TextXAlignment.Left
+typeLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 typeLabel.Parent = search
 
-local shirtTypeButton =
-	createButton(
-		search,
-		"ðŸ‘• SHIRT",
-		UDim2.fromOffset(20, 95),
-		UDim2.fromOffset(185, 40),
-		Color3.fromRGB(
-			55,
-			110,
-			180
-		)
-	)
+--========================================================
+-- TYPE BUTTONS
+--========================================================
 
-local pantsTypeButton =
-	createButton(
-		search,
-		"ðŸ‘– PANTS",
-		UDim2.fromOffset(215, 95),
-		UDim2.fromOffset(185, 40),
-		Color3.fromRGB(
-			65,
-			65,
-			65
-		)
-	)
+local shirtTypeButton = createButton(
+	search,
+	"👕 SHIRT",
+	UDim2.fromOffset(20, 95),
+	UDim2.fromOffset(185, 40),
+	Color3.fromRGB(55, 110, 180)
+)
 
-local idBox =
-	createTextBox(
-		search,
-		"SearchID",
-		"Entre l'Asset ID...",
-		UDim2.fromOffset(20, 150),
-		UDim2.fromOffset(380, 45)
-	)
+local pantsTypeButton = createButton(
+	search,
+	"👖 PANTS",
+	UDim2.fromOffset(215, 95),
+	UDim2.fromOffset(185, 40),
+	Color3.fromRGB(65, 65, 65)
+)
 
-local searchButton =
-	createButton(
-		search,
-		"ðŸ”Ž RECHERCHER",
-		UDim2.fromOffset(20, 205),
-		UDim2.fromOffset(380, 42),
-		Color3.fromRGB(
-			55,
-			130,
-			85
-		)
-	)
+--========================================================
+-- ID
+--========================================================
 
-local preview =
-	Instance.new("ImageLabel")
+local idBox = createTextBox(
+	search,
+	"SearchID",
+	"Entre l'Asset ID...",
+	UDim2.fromOffset(20, 150),
+	UDim2.fromOffset(380, 45)
+)
 
-preview.Size =
-	UDim2.fromOffset(
-		180,
-		180
-	)
+--========================================================
+-- RECHERCHER
+--========================================================
 
-preview.Position =
-	UDim2.new(
-		0.5,
-		-90,
-		0,
-		265
-	)
+local searchButton = createButton(
+	search,
+	"🔎 RECHERCHER",
+	UDim2.fromOffset(20, 205),
+	UDim2.fromOffset(380, 42),
+	Color3.fromRGB(55, 130, 85)
+)
+
+--========================================================
+-- APERCU
+--========================================================
+
+local preview = Instance.new("ImageLabel")
+
+preview.Size = UDim2.fromOffset(180, 180)
+
+preview.Position = UDim2.new(
+	0.5,
+	-90,
+	0,
+	265
+)
 
 preview.BackgroundColor3 =
-	Color3.fromRGB(
-		35,
-		35,
-		35
-	)
+	Color3.fromRGB(35, 35, 35)
 
 preview.BorderSizePixel = 0
+
 preview.Image = ""
 
 preview.ScaleType =
@@ -703,74 +528,96 @@ preview.Parent = search
 
 addCorner(preview, 12)
 
-local resultLabel =
-	Instance.new("TextLabel")
+--========================================================
+-- RESULTAT
+--========================================================
 
-resultLabel.Size =
-	UDim2.fromOffset(
-		380,
-		35
-	)
+local resultLabel = Instance.new("TextLabel")
 
-resultLabel.Position =
-	UDim2.fromOffset(
-		20,
-		250
-	)
+resultLabel.Size = UDim2.fromOffset(380, 35)
+
+resultLabel.Position = UDim2.fromOffset(20, 250)
 
 resultLabel.BackgroundTransparency = 1
 
-resultLabel.Text =
-	"Aucun item sÃ©lectionnÃ©"
+resultLabel.Text = "Aucun item sélectionné"
 
 resultLabel.TextColor3 =
-	Color3.fromRGB(
-		180,
-		180,
-		180
-	)
+	Color3.fromRGB(180, 180, 180)
 
 resultLabel.TextSize = 15
 
-resultLabel.Font =
-	Enum.Font.GothamBold
+resultLabel.Font = Enum.Font.GothamBold
 
 resultLabel.TextXAlignment =
 	Enum.TextXAlignment.Center
 
 resultLabel.Parent = search
 
-local tryItemButton =
-	createButton(
-		search,
-		"âš¡ ESSAYER",
-		UDim2.fromOffset(20, 465),
-		UDim2.fromOffset(185, 40),
-		Color3.fromRGB(
-			45,
-			140,
-			70
-		)
-	)
-
-local loadItemButton =
-	createButton(
-		search,
-		"CHARGER",
-		UDim2.fromOffset(215, 465),
-		UDim2.fromOffset(185, 40),
-		Color3.fromRGB(
-			70,
-			80,
-			150
-		)
-	)
-
 --========================================================
--- SEARCH LOGIC
+-- BOUTONS RESULTAT
 --========================================================
 
-local function showPreview(id)
+local tryItemButton = createButton(
+	search,
+	"⚡ ESSAYER",
+	UDim2.fromOffset(20, 465),
+	UDim2.fromOffset(185, 40),
+	Color3.fromRGB(45, 140, 70)
+)
+
+local loadItemButton = createButton(
+	search,
+	"CHARGER",
+	UDim2.fromOffset(215, 465),
+	UDim2.fromOffset(185, 40),
+	Color3.fromRGB(70, 80, 150)
+)
+
+--========================================================
+-- VARIABLES SEARCH
+--========================================================
+
+local currentItemID = nil
+local currentItemType = "Shirt"
+
+--========================================================
+-- TYPE SHIRT
+--========================================================
+
+shirtTypeButton.MouseButton1Click:Connect(function()
+
+	selectedSearchType = "Shirt"
+
+	shirtTypeButton.BackgroundColor3 =
+		Color3.fromRGB(55, 110, 180)
+
+	pantsTypeButton.BackgroundColor3 =
+		Color3.fromRGB(65, 65, 65)
+
+end)
+
+--========================================================
+-- TYPE PANTS
+--========================================================
+
+pantsTypeButton.MouseButton1Click:Connect(function()
+
+	selectedSearchType = "Pants"
+
+	pantsTypeButton.BackgroundColor3 =
+		Color3.fromRGB(55, 110, 180)
+
+	shirtTypeButton.BackgroundColor3 =
+		Color3.fromRGB(65, 65, 65)
+
+end)
+
+--========================================================
+-- FONCTION APERCU
+--========================================================
+
+local function showItemPreview(id)
 
 	preview.Image =
 		"rbxthumb://type=Asset&id="
@@ -779,106 +626,59 @@ local function showPreview(id)
 
 end
 
+--========================================================
+-- RECHERCHE ID
+--========================================================
+
 local function searchItem()
 
-	local id =
-		cleanID(idBox.Text)
+	local id = cleanID(idBox.Text)
 
 	if not id then
 
 		currentItemID = nil
+
 		preview.Image = ""
 
 		resultLabel.Text =
-			"âŒ ID invalide"
+			"❌ ID invalide"
 
 		resultLabel.TextColor3 =
-			Color3.fromRGB(
-				220,
-				80,
-				80
-			)
+			Color3.fromRGB(220, 80, 80)
 
 		return
+
 	end
 
 	currentItemID = id
+
 	currentItemType =
 		selectedSearchType
 
-	showPreview(id)
+	showItemPreview(id)
 
 	resultLabel.Text =
-		"ID : "
-		.. tostring(id)
-		.. " | "
+		"ID : " .. tostring(id)
+		.. "  |  "
 		.. selectedSearchType
 
 	resultLabel.TextColor3 =
-		Color3.fromRGB(
-			100,
-			220,
-			130
-		)
+		Color3.fromRGB(100, 220, 130)
+
 end
 
-searchButton.MouseButton1Click:Connect(
-	searchItem
-)
+searchButton.MouseButton1Click:Connect(searchItem)
 
-idBox.FocusLost:Connect(
-	function(enterPressed)
+idBox.FocusLost:Connect(function(enterPressed)
 
-		if enterPressed then
-			searchItem()
-		end
+	if enterPressed then
+		searchItem()
 	end
-)
 
-shirtTypeButton.MouseButton1Click:Connect(
-	function()
-
-		selectedSearchType = "Shirt"
-
-		shirtTypeButton.BackgroundColor3 =
-			Color3.fromRGB(
-				55,
-				110,
-				180
-			)
-
-		pantsTypeButton.BackgroundColor3 =
-			Color3.fromRGB(
-				65,
-				65,
-				65
-			)
-	end
-)
-
-pantsTypeButton.MouseButton1Click:Connect(
-	function()
-
-		selectedSearchType = "Pants"
-
-		pantsTypeButton.BackgroundColor3 =
-			Color3.fromRGB(
-				55,
-				110,
-				180
-			)
-
-		shirtTypeButton.BackgroundColor3 =
-			Color3.fromRGB(
-				65,
-				65,
-				65
-			)
-	end
-)
+end)
 
 --========================================================
--- EQUIP SEARCH ITEM
+-- ESSAYER L'ITEM
 --========================================================
 
 local function equipSearchItem()
@@ -886,93 +686,97 @@ local function equipSearchItem()
 	if not currentItemID then
 
 		resultLabel.Text =
-			"âŒ Recherche d'abord un ID"
+			"❌ Recherche d'abord un ID"
+
+		resultLabel.TextColor3 =
+			Color3.fromRGB(220, 80, 80)
 
 		return
+
 	end
 
-	local character =
-		getCharacter()
+	local character = getCharacter()
+
+	--====================================================
+	-- SHIRT
+	--====================================================
 
 	if currentItemType == "Shirt" then
 
+		if originalShirt == nil then
+
+			local oldShirt =
+				character:FindFirstChildOfClass("Shirt")
+
+			if oldShirt then
+				originalShirt =
+					oldShirt.ShirtTemplate
+			else
+				originalShirt = false
+			end
+
+		end
+
 		local shirt =
-			character:FindFirstChildOfClass(
-				"Shirt"
-			)
+			character:FindFirstChildOfClass("Shirt")
 
 		if not shirt then
+
 			shirt = Instance.new("Shirt")
-			shirt.Parent = character
+
+			shirt.Parent =
+				character
+
 		end
 
 		shirt.ShirtTemplate =
-			"rbxassetid://"
-			.. tostring(currentItemID)
+			"rbxassetid://" ..
+			tostring(currentItemID)
 
-	else
+	--====================================================
+	-- PANTS
+	--====================================================
+
+	elseif currentItemType == "Pants" then
+
+		if originalPants == nil then
+
+			local oldPants =
+				character:FindFirstChildOfClass("Pants")
+
+			if oldPants then
+				originalPants =
+					oldPants.PantsTemplate
+			else
+				originalPants = false
+			end
+
+		end
 
 		local pants =
-			character:FindFirstChildOfClass(
-				"Pants"
-			)
+			character:FindFirstChildOfClass("Pants")
 
 		if not pants then
+
 			pants = Instance.new("Pants")
-			pants.Parent = character
+
+			pants.Parent =
+				character
+
 		end
 
 		pants.PantsTemplate =
-			"rbxassetid://"
-			.. tostring(currentItemID)
+			"rbxassetid://" ..
+			tostring(currentItemID)
+
 	end
 
-	local currentShirt =
-		character:FindFirstChildOfClass(
-			"Shirt"
-		)
-
-	local currentPants =
-		character:FindFirstChildOfClass(
-			"Pants"
-		)
-
-	local shirtID =
-		currentShirt
-		and cleanID(
-			currentShirt.ShirtTemplate
-		)
-
-	local pantsID =
-		currentPants
-		and cleanID(
-			currentPants.PantsTemplate
-		)
-
-	Remote:FireServer(
-		"EquipClothes",
-		{
-			shirtID =
-				shirtID
-				and tostring(shirtID)
-				or "",
-
-			pantsID =
-				pantsID
-				and tostring(pantsID)
-				or "",
-		}
-	)
-
 	resultLabel.Text =
-		"Ã‰QUIPÃ‰ âœ“"
+		"ÉQUIPÉ ✓"
 
 	resultLabel.TextColor3 =
-		Color3.fromRGB(
-			80,
-			220,
-			110
-		)
+		Color3.fromRGB(80, 220, 110)
+
 end
 
 tryItemButton.MouseButton1Click:Connect(
@@ -980,54 +784,94 @@ tryItemButton.MouseButton1Click:Connect(
 )
 
 --========================================================
--- LOAD ITEM INTO CLOTHING
+-- CHARGER DANS CLOTHING
 --========================================================
 
-loadItemButton.MouseButton1Click:Connect(
-	function()
+loadItemButton.MouseButton1Click:Connect(function()
 
-		if not currentItemID then
-
-			resultLabel.Text =
-				"âŒ Aucun item"
-
-			return
-		end
-
-		if currentItemType == "Shirt" then
-
-			shirtBox.Text =
-				tostring(currentItemID)
-
-			shirtTemplateBox.Text =
-				tostring(currentItemID)
-
-		else
-
-			pantsBox.Text =
-				tostring(currentItemID)
-
-			pantsTemplateBox.Text =
-				tostring(currentItemID)
-		end
+	if not currentItemID then
 
 		resultLabel.Text =
-			"CHARGÃ‰ DANS CLOTHING âœ“"
-	end
-)
+			"❌ Aucun item"
 
+		return
+
+	end
+
+	if currentItemType == "Shirt" then
+
+		shirtBox.Text =
+			tostring(currentItemID)
+
+		shirtTemplateBox.Text =
+			tostring(currentItemID)
+
+	elseif currentItemType == "Pants" then
+
+		pantsBox.Text =
+			tostring(currentItemID)
+
+		pantsTemplateBox.Text =
+			tostring(currentItemID)
+
+	end
+
+	resultLabel.Text =
+		"CHARGÉ DANS CLOTHING ✓"
+
+	resultLabel.TextColor3 =
+		Color3.fromRGB(100, 220, 130)
+
+end)
+
+--========================================================
+-- DRAG SEARCH
+--========================================================
+
+local searchDragging = false
+local searchDragStart
+local searchStartPosition
+
+searchTitle.InputBegan:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1 then
+
+		searchDragging = true
+
+		searchDragStart =
+			input.Position
+
+		searchStartPosition =
+			search.Position
+
+	end
+
+end)
+
+searchTitle.InputEnded:Connect(function(input)
+
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1 then
+
+		searchDragging = false
+
+	end
+
+end)
+
+--========================================================
 --========================================================
 -- SAVED OUTFITS
 --========================================================
+--========================================================
 
-local saved =
-	Instance.new("Frame")
+local saved = Instance.new("Frame")
+
+saved.Name = "SavedOutfits"
 
 saved.Size =
-	UDim2.fromOffset(
-		500,
-		600
-	)
+	UDim2.fromOffset(500, 600)
 
 saved.Position =
 	UDim2.new(
@@ -1038,39 +882,30 @@ saved.Position =
 	)
 
 saved.BackgroundColor3 =
-	Color3.fromRGB(
-		20,
-		20,
-		20
-	)
+	Color3.fromRGB(20, 20, 20)
 
 saved.BorderSizePixel = 0
-saved.Active = true
+
 saved.Parent = gui
 
 addCorner(saved, 15)
 
-local savedTitle =
-	Instance.new("TextLabel")
+--========================================================
+-- TITRE
+--========================================================
+
+local savedTitle = Instance.new("TextLabel")
 
 savedTitle.Size =
-	UDim2.new(
-		1,
-		-70,
-		0,
-		50
-	)
+	UDim2.new(1, -70, 0, 50)
 
 savedTitle.Position =
-	UDim2.fromOffset(
-		20,
-		5
-	)
+	UDim2.fromOffset(20, 5)
 
 savedTitle.BackgroundTransparency = 1
 
 savedTitle.Text =
-	"ðŸ’¾ SAVED OUTFITS"
+	"💾 SAVED OUTFITS"
 
 savedTitle.TextColor3 =
 	Color3.new(1, 1, 1)
@@ -1085,58 +920,50 @@ savedTitle.TextXAlignment =
 
 savedTitle.Parent = saved
 
-local closeSaved =
-	createButton(
-		saved,
-		"X",
-		UDim2.new(1, -50, 0, 10),
-		UDim2.fromOffset(40, 40),
-		Color3.fromRGB(
-			160,
-			55,
-			55
-		)
-	)
+--========================================================
+-- CLOSE SAVED
+--========================================================
 
-local saveButton =
-	createButton(
-		saved,
-		"+ SAUVEGARDER LA TENUE",
-		UDim2.fromOffset(20, 65),
-		UDim2.new(1, -40, 0, 42),
-		Color3.fromRGB(
-			55,
-			110,
-			180
-		)
-	)
+local closeSaved = createButton(
+	saved,
+	"X",
+	UDim2.new(1, -50, 0, 10),
+	UDim2.fromOffset(40, 40),
+	Color3.fromRGB(160, 55, 55)
+)
 
-local list =
-	Instance.new("ScrollingFrame")
+--========================================================
+-- SAVE BUTTON
+--========================================================
+
+local saveButton = createButton(
+	saved,
+	"+ SAUVEGARDER LA TENUE",
+	UDim2.fromOffset(20, 65),
+	UDim2.new(1, -40, 0, 42),
+	Color3.fromRGB(55, 110, 180)
+)
+
+--========================================================
+-- LISTE
+--========================================================
+
+local list = Instance.new("ScrollingFrame")
+
+list.Name =
+	"OutfitList"
 
 list.Size =
-	UDim2.new(
-		1,
-		-30,
-		1,
-		-125
-	)
+	UDim2.new(1, -30, 1, -125)
 
 list.Position =
-	UDim2.fromOffset(
-		15,
-		120
-	)
+	UDim2.fromOffset(15, 120)
 
 list.BackgroundTransparency = 1
+
 list.BorderSizePixel = 0
 
-list.ScrollBarThickness = 8
-list.ScrollingDirection =
-	Enum.ScrollingDirection.Y
-
-list.AutomaticCanvasSize =
-	Enum.AutomaticSize.Y
+list.ScrollBarThickness = 6
 
 list.CanvasSize =
 	UDim2.new(0, 0, 0, 0)
@@ -1147,10 +974,7 @@ local layout =
 	Instance.new("UIListLayout")
 
 layout.Padding =
-	UDim.new(
-		0,
-		10
-	)
+	UDim.new(0, 10)
 
 layout.HorizontalAlignment =
 	Enum.HorizontalAlignment.Center
@@ -1161,24 +985,15 @@ local empty =
 	Instance.new("TextLabel")
 
 empty.Size =
-	UDim2.new(
-		1,
-		-20,
-		0,
-		60
-	)
+	UDim2.new(1, -20, 0, 60)
 
 empty.BackgroundTransparency = 1
 
 empty.Text =
-	"Aucune tenue sauvegardÃ©e"
+	"Aucune tenue sauvegardée"
 
 empty.TextColor3 =
-	Color3.fromRGB(
-		150,
-		150,
-		150
-	)
+	Color3.fromRGB(150, 150, 150)
 
 empty.TextSize = 16
 
@@ -1188,317 +1003,41 @@ empty.Font =
 empty.Parent = list
 
 --========================================================
--- PREVIEW
+-- DRAG SAVED
 --========================================================
 
-local function createPreview(
-	parent,
-	outfit
-)
+local savedDragging = false
+local savedDragStart
+local savedStartPosition
 
-	local viewport =
-		Instance.new(
-			"ViewportFrame"
-		)
+savedTitle.InputBegan:Connect(function(input)
 
-	viewport.Size =
-		UDim2.fromOffset(
-			130,
-			150
-		)
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1 then
 
-	viewport.Position =
-		UDim2.fromOffset(
-			10,
-			10
-		)
+		savedDragging = true
 
-	viewport.BackgroundColor3 =
-		Color3.fromRGB(
-			12,
-			12,
-			12
-		)
+		savedDragStart =
+			input.Position
 
-	viewport.BorderSizePixel = 0
+		savedStartPosition =
+			saved.Position
 
-	viewport.Ambient =
-		Color3.fromRGB(
-			200,
-			200,
-			200
-		)
-
-	viewport.LightColor =
-		Color3.fromRGB(
-			255,
-			255,
-			255
-		)
-
-	viewport.LightDirection =
-		Vector3.new(
-			-1,
-			-1,
-			-1
-		)
-
-	viewport.Parent = parent
-
-	addCorner(viewport, 8)
-
-	local world =
-		Instance.new(
-			"WorldModel"
-		)
-
-	world.Parent = viewport
-
-	local character =
-		player.Character
-
-	if not character then
-		return
 	end
 
-	character.Archivable = true
+end)
 
-	local clone =
-		character:Clone()
+savedTitle.InputEnded:Connect(function(input)
 
-	if not clone then
-		return
+	if input.UserInputType ==
+		Enum.UserInputType.MouseButton1 then
+
+		savedDragging = false
+
 	end
 
-	for _, object in ipairs(
-		clone:GetDescendants()
-		) do
-
-		if object:IsA("Script")
-			or object:IsA("LocalScript")
-			or object:IsA("ModuleScript")
-			or object:IsA("Tool") then
-
-			object:Destroy()
-		end
-	end
-
-	for _, object in ipairs(
-		clone:GetChildren()
-		) do
-
-		if object:IsA("Shirt")
-			or object:IsA("Pants")
-			or object:IsA("ShirtGraphic") then
-
-			object:Destroy()
-		end
-	end
-
-	if outfit.shirt
-		and outfit.shirt ~= "" then
-
-		local shirt =
-			Instance.new("Shirt")
-
-		shirt.ShirtTemplate =
-			outfit.shirt
-
-		shirt.Parent = clone
-	end
-
-	if outfit.pants
-		and outfit.pants ~= "" then
-
-		local pants =
-			Instance.new("Pants")
-
-		pants.PantsTemplate =
-			outfit.pants
-
-		pants.Parent = clone
-	end
-
-	clone.Parent = world
-
-	clone:PivotTo(
-		CFrame.new(
-			0,
-			0,
-			0
-		)
-	)
-
-	local camera =
-		Instance.new("Camera")
-
-	camera.CFrame =
-		CFrame.new(
-			Vector3.new(
-				0,
-				2.5,
-				8
-			),
-			Vector3.new(
-				0,
-				2.5,
-				0
-			)
-		)
-
-	camera.Parent = viewport
-
-	viewport.CurrentCamera =
-		camera
-end
+end)
 
 --========================================================
--- REFRESH LIST
---========================================================
-
-local function refreshOutfits()
-
-	for _, child in ipairs(
-		list:GetChildren()
-		) do
-
-		if child:IsA("Frame") then
-			child:Destroy()
-		end
-	end
-
-	empty.Visible =
-		#savedOutfits == 0
-
-	-- Les plus rÃ©centes apparaissent en premier
-	for displayIndex =
-		#savedOutfits,
-		1,
-		-1 do
-
-		local outfit =
-			savedOutfits[
-		displayIndex
-		]
-
-		local index =
-			displayIndex
-
-		local card =
-			Instance.new("Frame")
-
-		card.Size =
-			UDim2.new(
-				1,
-				-10,
-				0,
-				170
-			)
-
-		card.BackgroundColor3 =
-			Color3.fromRGB(
-				35,
-				35,
-				35
-			)
-
-		card.BorderSizePixel = 0
-
-		card.Parent = list
-
-		addCorner(card, 10)
-
-		createPreview(
-			card,
-			outfit
-		)
-
-		local name =
-			Instance.new("TextLabel")
-
-		name.Size =
-			UDim2.new(
-				1,
-				-155,
-				0,
-				35
-			)
-
-		name.Position =
-			UDim2.fromOffset(
-				150,
-				10
-			)
-
-		name.BackgroundTransparency = 1
-
-		name.Text =
-			tostring(
-				outfit.name
-				or "Outfit"
-			)
-
-		name.TextColor3 =
-			Color3.new(1, 1, 1)
-
-		name.TextSize = 17
-
-		name.Font =
-			Enum.Font.GothamBold
-
-		name.TextXAlignment =
-			Enum.TextXAlignment.Left
-
-		name.Parent = card
-
-		--================================================
-		-- EQUIP
-		--================================================
-
-		local equipSaved =
-			createButton(
-				card,
-				"EQUIPER",
-				UDim2.fromOffset(
-					150,
-					55
-				),
-				UDim2.fromOffset(
-					100,
-					35
-				),
-				Color3.fromRGB(
-					45,
-					140,
-					70
-				)
-			)
-
-		equipSaved.MouseButton1Click:Connect(
-			function()
-
-				shirtBox.Text =
-					outfit.shirtID
-					or ""
-
-				shirtTemplateBox.Text =
-					outfit.shirtID
-					or ""
-
-				pantsBox.Text =
-					outfit.pantsID
-					or ""
-
-				pantsTemplateBox.Text =
-					outfit.pantsID
-					or ""
-
-				local character =
-					getCharacter()
-
-				local shirtID =
-					cleanID(
-						outfit.shirtID
-					)
-
-				local 
+-- DRAG GLOBAL
+--=======================================
